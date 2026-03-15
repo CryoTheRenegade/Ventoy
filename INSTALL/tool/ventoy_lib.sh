@@ -60,10 +60,14 @@ check_tool_work_ok() {
         return
     fi
    
-    if mkexfatfs -V > /dev/null; then
+    if mkexfatfs -V > /dev/null 2>&1; then
         vtdebug "mkexfatfs test ok ..."
+        export VTOY_EXFAT_TOOL="mkexfatfs"
+    elif mkfs.exfat -V > /dev/null 2>&1 || mkfs.exfat --version > /dev/null 2>&1; then
+        vtdebug "mkfs.exfat test ok ..."
+        export VTOY_EXFAT_TOOL="mkfs.exfat"
     else
-        vtdebug "mkexfatfs test fail ..."
+        vtdebug "mkexfatfs and mkfs.exfat test fail ..."
         ventoy_false
         return
     fi

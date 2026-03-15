@@ -314,16 +314,29 @@ if [ "$MODE" = "install" -a -z "$NONDESTRUCTIVE" ]; then
     wait_and_create_part ${PART1} ${PART2}    
     if [ -b ${PART1} ]; then
         vtinfo "Format partition 1 ${PART1} ..."
-        mkexfatfs -n "$VTNEW_LABEL" -s $cluster_sectors ${PART1}
-        if [ $? -ne 0 ]; then
-            echo "mkexfatfs failed, now retry..."
+        [ -z "$VTOY_EXFAT_TOOL" ] && VTOY_EXFAT_TOOL="mkexfatfs"
+        _fmt_ret=1
+        if [ "$VTOY_EXFAT_TOOL" = "mkfs.exfat" ]; then
+            cluster_bytes=$(expr $cluster_sectors \* 512)
+            mkfs.exfat -n "$VTNEW_LABEL" -c $cluster_bytes ${PART1}
+            _fmt_ret=$?
+        else
             mkexfatfs -n "$VTNEW_LABEL" -s $cluster_sectors ${PART1}
+            _fmt_ret=$?
+        fi
+        if [ $_fmt_ret -ne 0 ]; then
+            echo "${VTOY_EXFAT_TOOL} failed, now retry..."
+            if [ "$VTOY_EXFAT_TOOL" = "mkfs.exfat" ]; then
+                mkfs.exfat -n "$VTNEW_LABEL" -c $cluster_bytes ${PART1}
+            else
+                mkexfatfs -n "$VTNEW_LABEL" -s $cluster_sectors ${PART1}
+            fi
             if [ $? -ne 0 ]; then
-                echo "######### mkexfatfs failed, exit ########"
+                echo "######### ${VTOY_EXFAT_TOOL} failed, exit ########"
                 exit 1
             fi
         else
-            echo "mkexfatfs success"
+            echo "${VTOY_EXFAT_TOOL} success"
         fi        
     else
         vterr "${PART1} NOT exist"
